@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "psi-project"
+version = "0.1.0"
+description = ""
+authors = ["notEloiir <igorsikora24@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+torch = "^2.5.1"
+torchvision = "^0.20.1"
+torchaudio = "^2.5.1"
+pytorch-lightning = "^2.4.0"
+transformers = "^4.47.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
