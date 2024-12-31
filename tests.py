@@ -1,5 +1,7 @@
+import pytorch_lightning as pl
 import torch
 from torch.utils.data import DataLoader, Dataset
+import torch.multiprocessing as mp
 
 from gpt2_lightning import GPT2Lightning
 from model import Experimental
@@ -32,7 +34,7 @@ class TextDataset(Dataset):
         return self.datapoints[idx]
 
 
-def test_model(model: GPT2Lightning, prompt, extended_context, max_tokens, temp, top_k, top_p):
+def test_model(model, prompt, extended_context, max_tokens, temp, top_k, top_p):
     generated_text = model.generate_text(prompt, max_tokens, temperature=temp, top_k=top_k, top_p=top_p)
     print(f"\nUntrained {type(model).__name__} generated text:\n{generated_text}")
 
@@ -40,8 +42,10 @@ def test_model(model: GPT2Lightning, prompt, extended_context, max_tokens, temp,
         return
 
     dataset = TextDataset(extended_context, model.tokenizer, model.device)
-    dataloader = DataLoader(dataset, batch_size=1)
-    model.train_soft(dataloader)
+    dataloader = DataLoader(dataset, batch_size=1, num_workers=15, persistent_workers=True)
+    trainer = pl.Trainer(max_epochs=5, log_every_n_steps=1)
+    trainer.fit(model, dataloader)
+
     generated_text = model.generate_text(prompt, max_tokens, temperature=temp, top_k=top_k, top_p=top_p)
     print(f"\nTrained {type(model).__name__} generated text:\n{generated_text}")
 
@@ -69,7 +73,11 @@ Answer:'''
     temperature = 1.0
     top_k = 50
     top_p = 0.95
+    model_name = "gpt2"  # "gpt2", "gpt-medium", "gpt2-large" or "gpt2-xl"
 
     # Show examples
-    test_model(GPT2Lightning(device=device), prompt, None, max_tokens, temperature, top_k, top_p)
-    test_model(Experimental(weighted_mean_init=0.0, device=device), prompt, extended_context, max_tokens, temperature, top_k, top_p)
+    mp.set_start_method("spawn")
+    test_model(GPT2Lightning(pretrained_model_name=model_name, device=device),
+               prompt, extended_context, max_tokens, temperature, top_k, top_p)
+    test_model(Experimental(pretrained_model_name=model_name, weighted_mean_init=0.0, device=device),
+               prompt, extended_context, max_tokens, temperature, top_k, top_p)

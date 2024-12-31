@@ -2,8 +2,6 @@ import copy
 
 import torch
 import torch.nn as nn
-from torch.nn import functional as F
-from torch.utils.data import DataLoader
 
 from gpt2_lightning import GPT2Lightning
 
@@ -31,13 +29,13 @@ class Experimental(GPT2Lightning):
             for _ in range(self.config.n_layer)
         ])
 
-        # Set optimizer
-        self.optimizer = torch.optim.AdamW([
+        self.to(device)
+
+    def configure_optimizers(self):
+        return torch.optim.AdamW([
             {'params': self.left.parameters(), 'lr': 5e-3},
             {'params': self.weighted_mean.parameters(), 'lr': 5e-5}
         ])
-
-        self.to(device)
 
     def forward(self, input_ids, attention_mask=None):
         # Embedding lookup
@@ -94,15 +92,4 @@ class Experimental(GPT2Lightning):
         logits = self.lm_head(hidden_states)
 
         return logits
-
-    def training_step(self, batch, batch_idx):
-        input_ids, attention_mask, labels = batch["input_ids"], batch["attention_mask"], batch["labels"]
-        logits = self(input_ids, attention_mask=attention_mask)
-        loss = F.cross_entropy(logits.view(-1, self.config.vocab_size), labels.view(-1))
-        return loss
-
-    def train_soft(self, dataloader: DataLoader):
-        for batch_idx, batch in enumerate(dataloader):
-            loss = self.training_step(batch, 0)
-            print(f"\nLoss: {loss.item()}")
 

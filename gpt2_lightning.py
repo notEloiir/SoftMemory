@@ -114,6 +114,14 @@ class GPT2Lightning(pl.LightningModule):
 
         return logits
 
+    def training_step(self, batch, batch_idx):
+        input_ids, attention_mask, labels = batch["input_ids"], batch["attention_mask"], batch["labels"]
+        logits = self(input_ids, attention_mask=attention_mask)
+        loss = F.cross_entropy(logits.view(-1, self.config.vocab_size), labels.view(-1))
+
+        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        return loss
+
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=5e-5)
 
