@@ -8,19 +8,28 @@ from model import Experimental
 class TextDataset(Dataset):
     def __init__(self, texts, tokenizer, device, max_length=512):
         self.tokenizer = tokenizer
-        self.texts = texts
+        self.datapoints = list()
         self.max_length = max_length
         self.device = device
 
-    def __len__(self):
-        return len(self.texts)
+        for text in texts:
+            i = 0
+            while i + (max_length // 2) < len(text) or i == 0:
+                self.make_datapoint(text[i * (max_length // 2):(i + 2) * (max_length // 2)])
+                i += (max_length // 2)
 
-    def __getitem__(self, idx):
-        encoded = self.tokenizer(self.texts[idx], return_tensors="pt", max_length=self.max_length, truncation=True)
+    def make_datapoint(self, text_part):
+        encoded = self.tokenizer(text_part, return_tensors="pt", max_length=self.max_length, truncation=True)
         input_ids = encoded["input_ids"].squeeze(0).to(self.device)  # [seq_len]
         attention_mask = encoded["attention_mask"].squeeze(0).to(self.device)  # [seq_len]
         labels = input_ids.clone()
-        return {"input_ids": input_ids, "attention_mask": attention_mask, "labels": labels}
+        self.datapoints.append({"input_ids": input_ids, "attention_mask": attention_mask, "labels": labels})
+
+    def __len__(self):
+        return len(self.datapoints)
+
+    def __getitem__(self, idx):
+        return self.datapoints[idx]
 
 
 def test_model(model: GPT2Lightning, prompt, extended_context, max_tokens, temp, top_k, top_p):
