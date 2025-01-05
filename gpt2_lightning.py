@@ -51,7 +51,7 @@ def top_k_top_p_filtering(
 # Test model that mirrors GPT2LMHeadModel.from_pretrained(pretrained_model_name)
 # Used to compare sanity of experimental model
 class GPT2Lightning(pl.LightningModule):
-    def __init__(self, pretrained_model_name="gpt2", device=torch.device("cpu")):
+    def __init__(self, pretrained_model_name="gpt2"):
         super().__init__()
         # Load the GPT2 configuration and pretrained weights
         self.config = GPT2Config.from_pretrained(pretrained_model_name)
@@ -68,9 +68,6 @@ class GPT2Lightning(pl.LightningModule):
 
         # Load the pretrained weights
         self.load_pretrained_weights(pretrained_model_name)
-
-        # Set device
-        self.to(device)
 
     def load_pretrained_weights(self, pretrained_model_name):
         pretrained_model = GPT2LMHeadModel.from_pretrained(pretrained_model_name)

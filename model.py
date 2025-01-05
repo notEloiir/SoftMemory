@@ -7,8 +7,8 @@ from gpt2_lightning import GPT2Lightning
 
 
 class Experimental(GPT2Lightning):
-    def __init__(self, pretrained_model_name="gpt2", weighted_mean_init=0.01, device=torch.device("cpu")):
-        super().__init__(pretrained_model_name, device)
+    def __init__(self, pretrained_model_name="gpt2", weighted_mean_init=0.01):
+        super().__init__(pretrained_model_name)
 
         # Left side (soft)
         self.left = copy.deepcopy(self.h)
@@ -28,8 +28,6 @@ class Experimental(GPT2Lightning):
             nn.Parameter(weighted_mean_init * torch.ones(self.config.n_embd), requires_grad=True)
             for _ in range(self.config.n_layer)
         ])
-
-        self.to(device)
 
     def configure_optimizers(self):
         return torch.optim.AdamW([

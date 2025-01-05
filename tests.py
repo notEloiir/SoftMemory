@@ -8,11 +8,10 @@ from model import Experimental
 
 
 class TextDataset(Dataset):
-    def __init__(self, texts, tokenizer, device, max_length=512):
+    def __init__(self, texts, tokenizer, max_length=512):
         self.tokenizer = tokenizer
         self.datapoints = list()
         self.max_length = max_length
-        self.device = device
 
         for text in texts:
             i = 0
@@ -22,8 +21,8 @@ class TextDataset(Dataset):
 
     def make_datapoint(self, text_part):
         encoded = self.tokenizer(text_part, return_tensors="pt", max_length=self.max_length, truncation=True)
-        input_ids = encoded["input_ids"].squeeze(0).to(self.device)  # [seq_len]
-        attention_mask = encoded["attention_mask"].squeeze(0).to(self.device)  # [seq_len]
+        input_ids = encoded["input_ids"].squeeze(0)  # [seq_len]
+        attention_mask = encoded["attention_mask"].squeeze(0)  # [seq_len]
         labels = input_ids.clone()
         self.datapoints.append({"input_ids": input_ids, "attention_mask": attention_mask, "labels": labels})
 
@@ -41,7 +40,7 @@ def test_model(model, prompt, extended_context, max_tokens, temp, top_k, top_p):
     if extended_context is None:
         return
 
-    dataset = TextDataset(extended_context, model.tokenizer, model.device)
+    dataset = TextDataset(extended_context, model.tokenizer)
     dataloader = DataLoader(dataset, batch_size=1, num_workers=15, persistent_workers=True)
     trainer = pl.Trainer(max_epochs=5, log_every_n_steps=1)
     trainer.fit(model, dataloader)
@@ -55,8 +54,6 @@ if __name__ == "__main__":
     print("CUDA available:", torch.cuda.is_available())
     print("CUDA version:", torch.version.cuda)
     print("GPU name:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device:", device)
 
     extended_context = [
 '''In the dark forest, lived a great vampire. They loved garlic, the smell of it, the taste of it.
@@ -74,10 +71,13 @@ Answer:'''
     top_k = 50
     top_p = 0.95
     model_name = "gpt2"  # "gpt2", "gpt-medium", "gpt2-large" or "gpt2-xl"
+    weighted_mean_init = 0.01
 
     # Show examples
     mp.set_start_method("spawn")
-    test_model(GPT2Lightning(pretrained_model_name=model_name, device=device),
+    # test_model(GPT2Lightning(pretrained_model_name=model_name),
+    #            prompt, extended_context, max_tokens, temperature, top_k, top_p)
+    test_model(Experimental(pretrained_model_name=model_name, weighted_mean_init=weighted_mean_init),
                prompt, extended_context, max_tokens, temperature, top_k, top_p)
-    test_model(Experimental(pretrained_model_name=model_name, weighted_mean_init=0.0, device=device),
-               prompt, extended_context, max_tokens, temperature, top_k, top_p)
+
+
