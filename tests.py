@@ -65,6 +65,7 @@ def benchmark_model(model, dataset_name="lambada"):
     dataloader = DataLoader(dataset, batch_size=1, num_workers=15, persistent_workers=True)
     optimizer = model.configure_optimizers()
 
+    print("Benchmark started, please be patient")
     val_accuracy = list()
     for batch_idx, batch in enumerate(dataloader):
         if isinstance(model, Experimental):
@@ -80,8 +81,9 @@ def benchmark_model(model, dataset_name="lambada"):
         with torch.no_grad():
             val_accuracy.append(model.validation_step(batch, batch_idx))
 
-        if batch_idx and batch_idx % 100 == 0:
+        if batch_idx and batch_idx % 500 == 0:
             print(f"Validation Accuracy ({batch_idx} of {len(dataloader)} done): {sum(val_accuracy) / batch_idx:.2%}")
+    print(f"Validation Accuracy (all done): {sum(val_accuracy) / len(dataloader):.2%}")
 
 
 if __name__ == "__main__":
@@ -116,5 +118,7 @@ Answer:'''
     #            prompt, extended_context, max_tokens, temperature, top_k, top_p)
 
     # Benchmark
-    benchmark_model(GPT2Lightning(pretrained_model_name=model_name))
+    # normal GPT2-small has 60.53% accuracy
+    # benchmark_model(GPT2Lightning(pretrained_model_name=model_name))
+    # experimental model based on GPT2-small has 59.23% accuracy so far
     benchmark_model(Experimental(pretrained_model_name=model_name, weighted_mean_init=weighted_mean_init))
