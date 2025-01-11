@@ -21,11 +21,11 @@ class TextDataset(Dataset):
             input_ids = tokens["input_ids"].squeeze(0)
             attention_mask = tokens["attention_mask"].squeeze(0)
 
-            datapoint = {"chunks": list()}
+            datapoint = list()
             start, step = 0, (max_length // 2)
             while start + step < input_ids.size(0) or start == 0:
                 end = min(start + max_length, input_ids.size(0))
-                datapoint["chunks"].append({
+                datapoint.append({
                     "input_ids": input_ids[start : (end - 1)].clone().to(device),
                     "attention_mask": attention_mask[start : (end - 1)].clone().to(device),
                     "labels": input_ids[(start + 1) : end].clone().to(device),

@@ -112,21 +112,20 @@ class GPT2Lightning(pl.LightningModule):
         return logits
 
     def training_step(self, batch, batch_idx):
-        chunks = batch["chunks"]
         loss = 0
 
-        for chunk in chunks:
+        for chunk in batch:
             input_ids, attention_mask, labels = chunk["input_ids"], chunk["attention_mask"], chunk["labels"]
 
             logits = self(input_ids, attention_mask=attention_mask)
             loss += F.cross_entropy(logits.view(-1, self.config.vocab_size), labels.view(-1))
 
-        loss /= len(chunks)
+        loss /= len(batch)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        chunk = batch["chunks"][-1]
+        chunk = batch[-1]
         input_ids, attention_mask, label = chunk["input_ids"], chunk["attention_mask"], chunk["labels"][:, -1]
 
         logits = self(input_ids, attention_mask=attention_mask)
