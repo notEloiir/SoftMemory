@@ -91,3 +91,5 @@ class Experimental(GPT2Lightning):
 
         return logits
 
+    def reset_soft(self):
+        self.left = copy.deepcopy(self.h)

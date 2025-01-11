@@ -112,12 +112,32 @@ class GPT2Lightning(pl.LightningModule):
         return logits
 
     def training_step(self, batch, batch_idx):
-        input_ids, attention_mask, labels = batch["input_ids"], batch["attention_mask"], batch["labels"]
-        logits = self(input_ids, attention_mask=attention_mask)
-        loss = F.cross_entropy(logits.view(-1, self.config.vocab_size), labels.view(-1))
+        chunks = batch["chunks"]
+        loss = 0
 
+        for chunk in chunks:
+            input_ids, attention_mask, labels = chunk["input_ids"], chunk["attention_mask"], chunk["labels"]
+
+            logits = self(input_ids, attention_mask=attention_mask)
+            loss += F.cross_entropy(logits.view(-1, self.config.vocab_size), labels.view(-1))
+
+        loss /= len(chunks)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         return loss
+
+    def validation_step(self, batch, batch_idx):
+        chunk = batch["chunks"][-1]
+        input_ids, attention_mask = chunk["input_ids"], chunk["attention_mask"]
+        label = input_ids[-1]
+
+        logits = self(input_ids, attention_mask=attention_mask)
+        predicted_token = torch.argmax(logits[:, -2, :], dim=-1)  # -2 because -1 is the label
+
+        correct = (predicted_token == label).float()
+        accuracy = correct.mean()
+
+        self.log("val_accuracy", accuracy, prog_bar=True)
+        return accuracy
 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=5e-5)
