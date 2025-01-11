@@ -127,11 +127,10 @@ class GPT2Lightning(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         chunk = batch["chunks"][-1]
-        input_ids, attention_mask = chunk["input_ids"], chunk["attention_mask"]
-        label = input_ids[-1]
+        input_ids, attention_mask, label = chunk["input_ids"], chunk["attention_mask"], chunk["labels"][-1]
 
         logits = self(input_ids, attention_mask=attention_mask)
-        predicted_token = torch.argmax(logits[:, -2, :], dim=-1)  # -2 because -1 is the label
+        predicted_token = torch.argmax(logits[:, -1, :], dim=-1)
 
         correct = (predicted_token == label).float()
         accuracy = correct.mean()

@@ -9,7 +9,7 @@ from model import Experimental
 
 
 class TextDataset(Dataset):
-    def __init__(self, data, tokenizer, max_length=512, device=torch.device("cpu")):
+    def __init__(self, data, tokenizer, max_length=128, device=torch.device("cpu")):
         # if using lightning (as it should be), device parameter should be left at default
         self.tokenizer = tokenizer
         self.datapoints = list()
@@ -22,14 +22,15 @@ class TextDataset(Dataset):
             attention_mask = tokens["attention_mask"].squeeze(0)
 
             datapoint = {"chunks": list()}
-            i, step = 0, (max_length // 2)
-            while i + step < input_ids.size(0) or i == 0:
+            start, step = 0, (max_length // 2)
+            while start + step < input_ids.size(0) or start == 0:
+                end = min(start + max_length, input_ids.size(0))
                 datapoint["chunks"].append({
-                    "input_ids": input_ids[i : (i + step)].clone().to(device),
-                    "attention_mask": attention_mask[i : (i + step)].clone().to(device),
-                    "labels": input_ids[i : (i + step)].clone().to(device),
+                    "input_ids": input_ids[start : (end - 1)].clone().to(device),
+                    "attention_mask": attention_mask[start : (end - 1)].clone().to(device),
+                    "labels": input_ids[(start + 1) : end].clone().to(device),
                 })
-                i += step
+                start += step
             self.datapoints.append(datapoint)
 
     def __len__(self):
