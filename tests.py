@@ -121,7 +121,7 @@ Answer:'''
     #            prompt, extended_context, max_tokens, temperature, top_k, top_p)
 
     # Benchmark
-    # normal GPT2-small has 60.61% accuracy
+    # normal GPT2-small has 60.6% accuracy
     benchmark_model(GPT2Lightning(pretrained_model_name=model_name))
-    # experimental model based on GPT2-small has 60.43% accuracy and takes 6x the time
+    # experimental model based on GPT2-small has 61.1% accuracy and takes 6x the time
     benchmark_model(Experimental(pretrained_model_name=model_name, weighted_mean_init=weighted_mean_init))

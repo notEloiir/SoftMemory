@@ -54,34 +54,13 @@ class Experimental(GPT2Lightning):
         for block in self.left:
             left_hidden_states = block(left_hidden_states, attention_mask=attention_mask)[0]
 
-        for layer_idx in range(self.config.n_layer):
-            layer = self.right[layer_idx]
-
-            # modified GPT2Block.forward
-
-            # GPT-2 Layer: Self-Attention + Add & Norm
-            residual = hidden_states
-            hidden_states = layer.ln_1(hidden_states)
-            attn_outputs = layer.attn(hidden_states, attention_mask=attention_mask, layer_past=None, use_cache=False, output_attentions=False)
-            attn_output = attn_outputs[0]  # output_attn: a, present, (attentions)
-            outputs = attn_outputs[1:]
-            # residual connection
-            hidden_states = attn_output + residual
+        for block_idx, block in enumerate(self.right):
+            hidden_states = block(hidden_states, attention_mask=attention_mask)[0]
 
             # Weighted Mean Layer
             residual = hidden_states
-            weighted_left_states = left_hidden_states * self.weighted_mean[layer_idx].unsqueeze(0).unsqueeze(1)
+            weighted_left_states = left_hidden_states * self.weighted_mean[block_idx].unsqueeze(0).unsqueeze(1)
             hidden_states = residual + weighted_left_states
-
-            residual = hidden_states
-            hidden_states = layer.ln_2(hidden_states)
-            feed_forward_hidden_states = layer.mlp(hidden_states)
-            # residual connection
-            hidden_states = residual + feed_forward_hidden_states
-
-            outputs = (hidden_states,) + outputs[1:]
-
-            hidden_states = outputs[0]
 
         # Final layer normalization
         hidden_states = self.ln_f(hidden_states)
