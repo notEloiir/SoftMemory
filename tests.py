@@ -3,13 +3,14 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 import torch.multiprocessing as mp
 from datasets import load_dataset
+import time
 
 from gpt2_lightning import GPT2Lightning
 from model import Experimental
 
 
 class TextDataset(Dataset):
-    def __init__(self, data, tokenizer, max_length=128, device=torch.device("cpu")):
+    def __init__(self, data, tokenizer, max_length=512, device=torch.device("cpu")):
         # if using lightning (as it should be), device parameter should be left at default
         self.tokenizer = tokenizer
         self.datapoints = list()
@@ -66,24 +67,26 @@ def benchmark_model(model, dataset_name="lambada"):
     optimizer = model.configure_optimizers()
 
     print("Benchmark started, please be patient")
-    val_accuracy = list()
+    start = time.time()
+    val_accuracy_sum = 0.
     for batch_idx, batch in enumerate(dataloader):
         if isinstance(model, Experimental):
             model.reset_soft()
-
             model.train()
-            optimizer.zero_grad()
-            loss = model.training_step(batch, batch_idx)
-            loss.backward()
-            optimizer.step()
+            for epoch in range(3):
+                loss = model.training_step(batch, batch_idx)
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
 
         model.eval()
         with torch.no_grad():
-            val_accuracy.append(model.validation_step(batch, batch_idx))
+            val_accuracy_sum += model.validation_step(batch, batch_idx)
 
         if batch_idx and batch_idx % 500 == 0:
-            print(f"Validation Accuracy ({batch_idx} of {len(dataloader)} done): {sum(val_accuracy) / batch_idx:.2%}")
-    print(f"Validation Accuracy (all done): {sum(val_accuracy) / len(dataloader):.2%}")
+            print(f"Validation Accuracy ({batch_idx} of {len(dataloader)} done): {val_accuracy_sum / batch_idx:.2%}")
+    print(f"Validation Accuracy (all done): {val_accuracy_sum / len(dataloader):.2%}")
+    print("Time elapsed:", time.time() - start)
 
 
 if __name__ == "__main__":
@@ -118,7 +121,7 @@ Answer:'''
     #            prompt, extended_context, max_tokens, temperature, top_k, top_p)
 
     # Benchmark
-    # normal GPT2-small has 60.53% accuracy
-    # benchmark_model(GPT2Lightning(pretrained_model_name=model_name))
-    # experimental model based on GPT2-small has 59.23% accuracy so far
+    # normal GPT2-small has 60.61% accuracy
+    benchmark_model(GPT2Lightning(pretrained_model_name=model_name))
+    # experimental model based on GPT2-small has 60.43% accuracy and takes 6x the time
     benchmark_model(Experimental(pretrained_model_name=model_name, weighted_mean_init=weighted_mean_init))

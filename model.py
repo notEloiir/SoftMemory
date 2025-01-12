@@ -25,14 +25,14 @@ class Experimental(GPT2Lightning):
 
         # Weighted mean parameters for each layer
         self.weighted_mean = nn.ParameterList([
-            nn.Parameter(weighted_mean_init * torch.ones(self.config.n_embd), requires_grad=True)
+            nn.Parameter(torch.rand(self.config.n_embd) * weighted_mean_init, requires_grad=True)
             for _ in range(self.config.n_layer)
         ])
 
     def configure_optimizers(self):
         return torch.optim.AdamW([
-            {'params': self.left.parameters(), 'lr': 5e-3},
-            {'params': self.weighted_mean.parameters(), 'lr': 5e-5}
+            {'params': self.left.parameters(), 'lr': 1e-3},
+            {'params': self.weighted_mean.parameters(), 'lr': 1e-3}
         ])
 
     def forward(self, input_ids, attention_mask=None):
