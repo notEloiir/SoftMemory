@@ -1,5 +1,11 @@
 ﻿# Experimental transformer architecture for handling long context
-Very experimental  
+Early attempt at a (very) experimental transformer architecture that could remember "historical"
+context, outside the actual context window, by learning on input test-time.  
+Rendered obsolete by the Google paper on Titans: https://arxiv.org/abs/2501.00663  
+It seems to be based on the same concept, but improves on various weaknesses of my approach,
+that I didn't have the time or resources to work on by the time the paper came out.
+
+## Performance
 On LAMBADA performs slightly better compared to normal GPT2 (61.1% to 60.6% accuracy) 
 at the cost of way longer computation time (6x time). (On 1 epoch it's same accuracy, 3x time.)   
 Granted it's not optimized, but still - not good for general use case model.  
